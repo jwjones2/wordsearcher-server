@@ -388,7 +388,7 @@ func main() {
 	// connect to Mongodb and initialize the global variables
 	fmt.Println("Connecting to MongoDB...")
 	mongoCtx = context.Background()
-	mongoURI := "mongodb+srv://wordsearcher:Paris__3467@wsapp01.buyct.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
+	mongoURI := os.Getenv("MONGOURI")
 	var err error
 	db, err = mongo.Connect(mongoCtx, options.Client().ApplyURI(mongoURI))
 	if err != nil {
