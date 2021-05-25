@@ -1,0 +1,88 @@
+// This is the proto buffer file for the WordSearcher
+// Server configuration.
+// It uses Mongo Atlas as a DB level and will be called
+// by an Angular client.
+
+// Protocol Buffer 3
+syntax = "proto3";
+
+// package and options
+package wordsearcher;
+
+option go_package="wordsearcher-server/wordsearcher";
+
+// *** Messages ***
+
+// Verse
+message Verse {
+  int32 book = 1;
+  string bookName = 2;
+  int32 chapter = 3;
+  int32 verse = 4;
+  string text = 5;
+  string keywords = 6;
+}
+
+message VerseRequest {
+  int32 book = 1;
+  int32 chapter = 2;
+  int32 verse_start = 3;
+  int32 verse_end = 4;
+}
+
+message VerseResponse {
+  repeated Verse verses = 1;
+}
+
+// Bible Plan
+message BiblePlan {
+  string name = 1;
+  int32 number = 2;
+  repeated string days = 3;
+}
+
+message BiblePlanRequest {
+  string name = 1;
+}
+
+message BiblePlanResponse {
+  repeated BiblePlan bible_plan = 1;
+}
+
+message BiblePlanDay {
+  string name = 1;
+  string reading1 = 2;
+  string reading2 = 3;
+  string reading3 = 4;
+  string reading4 = 5;
+}
+
+message BiblePlanDayRequest {
+  string name = 1;
+  int32 day = 2;
+}
+
+message BiblePlanDayResponse {
+  BiblePlanDay day = 1;
+}
+
+// Search
+message SearchRequest {
+  string term = 1;
+  string filter = 2;    // search filter, i.e. in, or exact
+  string location = 3;  // location of the search, default all, or nt (New Testament), ot, etc.
+  string options = 4;   // future options to add more complex and specific searches
+}
+
+// Servers
+service WordsearcherService {
+  // Unary - Verse
+  rpc Verse (VerseRequest) returns (VerseResponse){};
+
+  // Unary Search
+  rpc Search (SearchRequest) returns (VerseResponse){};
+
+  // Unary - Bible Plan
+  rpc BiblePlan (BiblePlanRequest) returns (BiblePlanResponse){};
+  rpc BiblePlanDay (BiblePlanDayRequest) returns (BiblePlanDayResponse){};
+}
