@@ -74,6 +74,33 @@ message SearchRequest {
   string options = 4;   // future options to add more complex and specific searches
 }
 
+// Custom requests
+message BookRangeRequest {
+  int32 start = 1;  // beginning book number in the range of books
+  int32 end = 2;    // ending book number, inclusive
+}
+
+message ChapterRangeRequest {
+  int32 book = 1;   // book number
+  int32 start = 2;  // start chapter in the given book
+  int32 end = 3;    // end chapter
+}
+
+message CustomRange {
+  string name = 1;
+  string type = 2;
+  int32 booknumber = 3;
+  repeated int32 customrange = 4;
+}
+
+message CustomRangeRequest {
+  string name = 1;
+}
+
+message CustomRangeResponse {
+  CustomRange custom_range = 1;
+}
+
 // Servers
 service WordsearcherService {
   // Unary - Verse
@@ -85,4 +112,9 @@ service WordsearcherService {
   // Unary - Bible Plan
   rpc BiblePlan (BiblePlanRequest) returns (BiblePlanResponse){};
   rpc BiblePlanDay (BiblePlanDayRequest) returns (BiblePlanDayResponse){};
+
+  // Custom requests
+  rpc BookRange (BookRangeRequest) returns (VerseResponse){};
+  rpc ChapterRange (ChapterRangeRequest) returns (VerseResponse){};
+  rpc CustomRange (CustomRangeRequest) returns (CustomRangeResponse){};
 }

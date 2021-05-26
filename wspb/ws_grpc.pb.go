@@ -25,6 +25,10 @@ type WordsearcherServiceClient interface {
 	// Unary - Bible Plan
 	BiblePlan(ctx context.Context, in *BiblePlanRequest, opts ...grpc.CallOption) (*BiblePlanResponse, error)
 	BiblePlanDay(ctx context.Context, in *BiblePlanDayRequest, opts ...grpc.CallOption) (*BiblePlanDayResponse, error)
+	// Custom requests
+	BookRange(ctx context.Context, in *BookRangeRequest, opts ...grpc.CallOption) (*VerseResponse, error)
+	ChapterRange(ctx context.Context, in *ChapterRangeRequest, opts ...grpc.CallOption) (*VerseResponse, error)
+	CustomRange(ctx context.Context, in *CustomRangeRequest, opts ...grpc.CallOption) (*CustomRangeResponse, error)
 }
 
 type wordsearcherServiceClient struct {
@@ -71,6 +75,33 @@ func (c *wordsearcherServiceClient) BiblePlanDay(ctx context.Context, in *BibleP
 	return out, nil
 }
 
+func (c *wordsearcherServiceClient) BookRange(ctx context.Context, in *BookRangeRequest, opts ...grpc.CallOption) (*VerseResponse, error) {
+	out := new(VerseResponse)
+	err := c.cc.Invoke(ctx, "/wordsearcher.WordsearcherService/BookRange", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *wordsearcherServiceClient) ChapterRange(ctx context.Context, in *ChapterRangeRequest, opts ...grpc.CallOption) (*VerseResponse, error) {
+	out := new(VerseResponse)
+	err := c.cc.Invoke(ctx, "/wordsearcher.WordsearcherService/ChapterRange", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *wordsearcherServiceClient) CustomRange(ctx context.Context, in *CustomRangeRequest, opts ...grpc.CallOption) (*CustomRangeResponse, error) {
+	out := new(CustomRangeResponse)
+	err := c.cc.Invoke(ctx, "/wordsearcher.WordsearcherService/CustomRange", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // WordsearcherServiceServer is the server API for WordsearcherService service.
 // All implementations must embed UnimplementedWordsearcherServiceServer
 // for forward compatibility
@@ -82,6 +113,10 @@ type WordsearcherServiceServer interface {
 	// Unary - Bible Plan
 	BiblePlan(context.Context, *BiblePlanRequest) (*BiblePlanResponse, error)
 	BiblePlanDay(context.Context, *BiblePlanDayRequest) (*BiblePlanDayResponse, error)
+	// Custom requests
+	BookRange(context.Context, *BookRangeRequest) (*VerseResponse, error)
+	ChapterRange(context.Context, *ChapterRangeRequest) (*VerseResponse, error)
+	CustomRange(context.Context, *CustomRangeRequest) (*CustomRangeResponse, error)
 	mustEmbedUnimplementedWordsearcherServiceServer()
 }
 
@@ -100,6 +135,15 @@ func (UnimplementedWordsearcherServiceServer) BiblePlan(context.Context, *BibleP
 }
 func (UnimplementedWordsearcherServiceServer) BiblePlanDay(context.Context, *BiblePlanDayRequest) (*BiblePlanDayResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BiblePlanDay not implemented")
+}
+func (UnimplementedWordsearcherServiceServer) BookRange(context.Context, *BookRangeRequest) (*VerseResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BookRange not implemented")
+}
+func (UnimplementedWordsearcherServiceServer) ChapterRange(context.Context, *ChapterRangeRequest) (*VerseResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ChapterRange not implemented")
+}
+func (UnimplementedWordsearcherServiceServer) CustomRange(context.Context, *CustomRangeRequest) (*CustomRangeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CustomRange not implemented")
 }
 func (UnimplementedWordsearcherServiceServer) mustEmbedUnimplementedWordsearcherServiceServer() {}
 
@@ -186,6 +230,60 @@ func _WordsearcherService_BiblePlanDay_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _WordsearcherService_BookRange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BookRangeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WordsearcherServiceServer).BookRange(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/wordsearcher.WordsearcherService/BookRange",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WordsearcherServiceServer).BookRange(ctx, req.(*BookRangeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _WordsearcherService_ChapterRange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChapterRangeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WordsearcherServiceServer).ChapterRange(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/wordsearcher.WordsearcherService/ChapterRange",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WordsearcherServiceServer).ChapterRange(ctx, req.(*ChapterRangeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _WordsearcherService_CustomRange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CustomRangeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WordsearcherServiceServer).CustomRange(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/wordsearcher.WordsearcherService/CustomRange",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WordsearcherServiceServer).CustomRange(ctx, req.(*CustomRangeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // WordsearcherService_ServiceDesc is the grpc.ServiceDesc for WordsearcherService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -208,6 +306,18 @@ var WordsearcherService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "BiblePlanDay",
 			Handler:    _WordsearcherService_BiblePlanDay_Handler,
+		},
+		{
+			MethodName: "BookRange",
+			Handler:    _WordsearcherService_BookRange_Handler,
+		},
+		{
+			MethodName: "ChapterRange",
+			Handler:    _WordsearcherService_ChapterRange_Handler,
+		},
+		{
+			MethodName: "CustomRange",
+			Handler:    _WordsearcherService_CustomRange_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

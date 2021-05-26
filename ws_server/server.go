@@ -28,6 +28,9 @@ type server struct {
 	wordsearcher.UnimplementedWordsearcherServiceServer
 }
 
+/* TODO - User
+ */
+
 // Verse struct for the Database items to return
 type Verse struct {
 	ID       primitive.ObjectID `bson:"id"`
@@ -39,7 +42,7 @@ type Verse struct {
 	Keywords string             `bson:"keywords"`
 }
 
-// Bible plan struct to return Bible Plans
+// BiblePlan Bible plan struct to return Bible Plans
 type BiblePlan struct {
 	ID     primitive.ObjectID `bson:"id"`
 	Name   string             `bson:"name"`
@@ -47,10 +50,19 @@ type BiblePlan struct {
 	Days   []string           `bson:"days"`
 }
 
-// Bible plan day struct for specific day of the Bible Plan
+// BiblePlanDay Bible plan day struct for specific day of the Bible Plan
 type BiblePlanDay struct {
 	ID      primitive.ObjectID `bson:"id"`
 	Reading string             `bson:"reading"`
+}
+
+// CustomRange Custom Range table
+type CustomRange struct {
+	ID          primitive.ObjectID `bson:"id"`
+	Name        string             `bson:"name"`
+	Type        string             `bson:"type"`
+	BookNumber  int32              `bson:"booknumber"`
+	CustomRange []int32            `bson:"customrange"`
 }
 
 func (s server) Verse(ctx context.Context, request *wordsearcher.VerseRequest) (*wordsearcher.VerseResponse, error) {
@@ -102,7 +114,7 @@ func (s server) Verse(ctx context.Context, request *wordsearcher.VerseRequest) (
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Error finding the verses: %v", err.Error()))
 	}
-	if cursorErr := verseCursor.All(mongoCtx, &verses); cursorErr != nil {
+	if cursorErr := verseCursor.All(ctx, &verses); cursorErr != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("Error decoding the cursor into verses: %v", cursorErr.Error()))
 	}
 
@@ -201,7 +213,7 @@ func (s server) BiblePlanDay(ctx context.Context, request *wordsearcher.BiblePla
 
 	// unpack the found plan days
 	var biblePlanDays []BiblePlanDay
-	if cursorErr := planCursor.All(mongoCtx, &biblePlanDays); cursorErr != nil {
+	if cursorErr := planCursor.All(ctx, &biblePlanDays); cursorErr != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("Error decoding the cursor into plans: %v", cursorErr.Error()))
 	}
 
@@ -348,7 +360,7 @@ func (s server) Search(ctx context.Context, request *wordsearcher.SearchRequest)
 		fmt.Println(filterStage)
 	}
 
-	verseCursor, err := collection.Aggregate(mongoCtx, mongo.Pipeline{filterStage, projectStage, sortStage})
+	verseCursor, err := collection.Aggregate(ctx, mongo.Pipeline{filterStage, projectStage, sortStage})
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "Could not complete the verse search: %v", err)
 	}
@@ -375,6 +387,162 @@ func (s server) Search(ctx context.Context, request *wordsearcher.SearchRequest)
 	// return the results to the client
 	return &wordsearcher.VerseResponse{
 		Verses: verseResponses,
+	}, nil
+}
+
+func (s server) BookRange(ctx context.Context, request *wordsearcher.BookRangeRequest) (*wordsearcher.VerseResponse, error) {
+	// Functionality:
+	// - Query verses based on book start and book end inclusive.
+	//
+	// **Error handling
+	// - If book start negative, return out of bounds error
+	// - If book start greater than book end, return out of bounds error
+	// - If book start and book end equal, returns one book
+
+	// first get the proper collection
+	collection = db.Database("myFirstDatabase").Collection("verse")
+
+	// validation - error handling
+	if request.GetStart() < 0 {
+		return nil, status.Errorf(codes.OutOfRange, "The book range must be positive. Invalid: %v", request.GetStart())
+	}
+	if request.GetStart() > request.GetEnd() {
+		return nil, status.Errorf(codes.OutOfRange,
+			"The start of the book range cannot be greater than the end. Invalid: Book Start: %v; Book End: %v",
+			request.GetStart(), request.GetEnd())
+	}
+
+	// build the filter
+	filter := bson.M{
+		"book": bson.M{
+			"$gte": request.GetStart(),
+			"$lte": request.GetEnd(),
+		},
+	}
+
+	// do the Database call and store the results
+	var verses []*Verse
+	verseCursor, err := collection.Find(ctx, filter)
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Error finding the verses: %v", err.Error()))
+	}
+	if cursorErr := verseCursor.All(mongoCtx, &verses); cursorErr != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("Error decoding the cursor into verses: %v", cursorErr.Error()))
+	}
+
+	// build the protocol buffer response
+	var verseResponses []*wordsearcher.Verse
+	for _, verse := range verses {
+		verseResponses = append(verseResponses, &wordsearcher.Verse{
+			Book:     verse.Book,
+			Chapter:  verse.Chapter,
+			BookName: verse.BookName,
+			Verse:    verse.Verse,
+			Text:     verse.Text,
+			Keywords: verse.Keywords,
+		})
+	}
+
+	// return the results to the client
+	return &wordsearcher.VerseResponse{
+		Verses: verseResponses,
+	}, nil
+}
+
+func (s server) ChapterRange(ctx context.Context, request *wordsearcher.ChapterRangeRequest) (*wordsearcher.VerseResponse, error) {
+	// Functionality:
+	// - Query verses based on chapters start and end in a particular book - a range of chapters in Genesis, for instance.
+	//
+	// **Error handling
+	// - If book is negative return out of bounds.
+	// - If chatper start is negative return out of bounds.
+	// - If chapter start is larger than chapter end return out of bounds.
+
+	// first get the proper collection
+	collection = db.Database("myFirstDatabase").Collection("verse")
+
+	// validation - error handling
+	if request.GetBook() < 0 {
+		return nil, status.Errorf(codes.OutOfRange, "The book must be positive. Invalid: %v", request.GetBook())
+	}
+	if request.GetStart() < 0 {
+		return nil, status.Errorf(codes.OutOfRange, "The chapter range must be positive. Invalid: %v", request.GetStart())
+	}
+	if request.GetStart() > request.GetEnd() {
+		return nil, status.Errorf(codes.OutOfRange,
+			"The start of the chapter range cannot be greater than the end. Invalid: Chapter Start: %v; Chapter End: %v",
+			request.GetStart(), request.GetEnd())
+	}
+
+	// build the filter
+	filter := bson.M{
+		"book": request.GetBook(),
+		"chapter": bson.M{
+			"$gte": request.GetStart(),
+			"$lte": request.GetEnd(),
+		},
+	}
+
+	// do the Database call and store the results
+	var verses []*Verse
+	verseCursor, err := collection.Find(ctx, filter)
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Error finding the verses: %v", err.Error()))
+	}
+	if cursorErr := verseCursor.All(mongoCtx, &verses); cursorErr != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("Error decoding the cursor into verses: %v", cursorErr.Error()))
+	}
+
+	// build the protocol buffer response
+	var verseResponses []*wordsearcher.Verse
+	for _, verse := range verses {
+		verseResponses = append(verseResponses, &wordsearcher.Verse{
+			Book:     verse.Book,
+			Chapter:  verse.Chapter,
+			BookName: verse.BookName,
+			Verse:    verse.Verse,
+			Text:     verse.Text,
+			Keywords: verse.Keywords,
+		})
+	}
+
+	// return the results to the client
+	return &wordsearcher.VerseResponse{
+		Verses: verseResponses,
+	}, nil
+}
+
+func (s server) CustomRange(ctx context.Context, request *wordsearcher.CustomRangeRequest) (*wordsearcher.CustomRangeResponse, error) {
+	// Functionality
+	// - Query the Custom Range table and return the results
+
+	// first get the proper collection
+	collection = db.Database("myFirstDatabase").Collection("customrange")
+
+	// build filter and query
+	filter := bson.D{
+		{"name", request.GetName()},
+	}
+	res := collection.FindOne(ctx, filter)
+	if res.Err() != nil {
+		return nil, status.Errorf(codes.NotFound, "Could not find the custom range named %s; %v.", request.GetName(), res.Err())
+	}
+
+	// marshal the result and build the return response and return
+	var cRange *CustomRange
+	err := res.Decode(&cRange)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Error decoding the custom range...please try again; %v", err)
+	}
+
+	// build the response and return
+	return &wordsearcher.CustomRangeResponse{
+		CustomRange: &wordsearcher.CustomRange{
+			Name:        cRange.Name,
+			Type:        cRange.Type,
+			Booknumber:  cRange.BookNumber,
+			Customrange: cRange.CustomRange,
+		},
 	}, nil
 }
 

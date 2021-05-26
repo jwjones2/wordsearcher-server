@@ -30,7 +30,10 @@ func main() {
 	//doChapterCall(c)
 	//doBiblePlanCall(c)
 	//doBiblePlanDayCall(c)
-	doSearch(c)
+	//doSearch(c)
+	doBookRange(c)
+	doChapterRange(c)
+	doCustomRange(c)
 }
 
 func doVerseUnary(c wordsearcher.WordsearcherServiceClient) {
@@ -135,4 +138,52 @@ func doSearch(c wordsearcher.WordsearcherServiceClient) {
 	} else {
 		fmt.Printf("Response from server: Number of Verses Found: %d; Response: %v", len(res.GetVerses()), res.GetVerses()[0])
 	}
+}
+
+func doBookRange(c wordsearcher.WordsearcherServiceClient) {
+	fmt.Println("\nStarting to do a Book Range gRPC...")
+
+	req := &wordsearcher.BookRangeRequest{
+		Start: 2,
+		End:   3,
+	}
+
+	res, err := c.BookRange(context.Background(), req)
+	if err != nil {
+		log.Fatalf("Response failed: %v", err)
+	}
+
+	fmt.Printf("\nResponse from server: Number of Verses Found: %d;", len(res.GetVerses()))
+}
+
+func doChapterRange(c wordsearcher.WordsearcherServiceClient) {
+	fmt.Println("\nStarting to do a Chatper Range gRPC...")
+
+	req := &wordsearcher.ChapterRangeRequest{
+		Book:  40,
+		Start: 1,
+		End:   4,
+	}
+
+	res, err := c.ChapterRange(context.Background(), req)
+	if err != nil {
+		log.Fatalf("Response failed: %v", err)
+	}
+
+	fmt.Printf("\nResponse from server: Number of Verses Found: %d;", len(res.GetVerses()))
+}
+
+func doCustomRange(c wordsearcher.WordsearcherServiceClient) {
+	fmt.Println("\nStarting to do a Custom Range gRPC...")
+
+	req := &wordsearcher.CustomRangeRequest{
+		Name: "law",
+	}
+
+	res, err := c.CustomRange(context.Background(), req)
+	if err != nil {
+		log.Fatalf("Response failed: %v", err)
+	}
+
+	fmt.Printf("\nResponse from server: Number of Books Found: %d;", len(res.GetCustomRange().Customrange))
 }
